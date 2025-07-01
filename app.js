@@ -4,6 +4,7 @@ const ejs = require('ejs')
 const Listing = require("./models/listing.js")
 const app = express()
 const path = require("path")
+const methodOverride = require('method-override')
 
 const MONGO_URL = ""
 
@@ -22,6 +23,7 @@ async function main(){
 app.set("view engine", 'ejs')
 app.set("views", path.join(__dirname, "views"))
 app.use(express.urlencoded({extended:true}))
+app.use(methodOverride("_method"))
 
 app.get("/", (req, res) => {
     res.send("Hi I am root")
@@ -53,6 +55,21 @@ app.get("/listings/:id/edit",async(req,res)=>{
     const listing = await Listing.findById(id)
     res.render("listings/edit",{listing})
 })
+
+app.put("/listings/:id",async(req,res)=>{
+    let {id} = req.params;
+    await Listing.findByIdAndUpdate(id,{...req.body.listing})
+    res.redirect(`/listings/${id}`);
+})
+
+app.delete("/listings/:id",async (req,res) => {
+    let {id} = req.params;
+    let deletedListing = await Listing.findByIdAndDelete(id);
+    console.log(deletedListing);
+    res.redirect('/listings')
+})
+
+
 
 // app.get("/testListing",async(req,res)=>{
 //     let sampleListing = new Listing({
