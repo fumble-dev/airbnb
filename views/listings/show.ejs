@@ -36,7 +36,7 @@
 
 
         <div class="col-8 offset-3 mb-3">
-            
+
             <% if(currUser) {%>
                 <hr>
                 <h4>Leave a Review</h4>
@@ -93,21 +93,81 @@
                                 </div>
                                 <%} %>
                         </div>
-                    <%}%>
+                        <%}%>
         </div>
 
         <div class="col-8 offset-3 mb-3">
             <h3>Where you'll be</h3>
             <div id="map"></div>
             <script>
+                // Set your MapTiler API key
                 maptilersdk.config.apiKey = '';
+
+                // Initialize the map
                 const map = new maptilersdk.Map({
-                    container: 'map', // container's id or the HTML element to render the map
+                    container: 'map',
                     style: maptilersdk.MapStyle.STREETS,
-                    center : [77.2090,28.6139],
-                    zoom : 11.7
+                    center: [78.4772, 17.4065], // default center (Hyderabad) – will update on geocode
+                    zoom: 11.7
+                });
+
+                // Run logic when map is fully loaded
+                map.on('load', async () => {
+                    // Add a source for geocoding result points
+                    map.addSource('search-results', {
+                        type: 'geojson',
+                        data: {
+                            "type": "FeatureCollection",
+                            "features": []
+                        }
+                    });
+
+                    // Add a layer to show the geocoded point
+                    map.addLayer({
+                        'id': 'point-result',
+                        'type': 'circle',
+                        'source': 'search-results',
+                        'paint': {
+                            'circle-radius': 8,
+                            'circle-color': '#B42222',
+                            'circle-opacity': 0.5
+                        },
+                        'filter': ['==', '$type', 'Point']
+                    });
+
+                    // Geocode the listing location
+                    const results = await maptilersdk.geocoding.forward("<%= listing.location %>");
+
+                    // Set the geojson source data
+                    map.getSource('search-results').setData(results);
+
+                    // Handle results
+                    if (results && results.features.length > 0) {
+                        const feature = results.features[0];
+                        const coords = feature.center;
+
+                        // Fit map to bbox if available, otherwise fly to center
+                        if (feature.bbox && feature.bbox.length === 4) {
+                            map.fitBounds(feature.bbox, { padding: 20, maxZoom: 13});
+                        } else if (coords && coords.length === 2) {
+                            map.flyTo({
+                                center: coords,
+                                zoom: 13,
+                                speed: 1.2
+                            });
+                        }
+
+                        // Add marker at result location
+                        new maptilersdk.Marker()
+                            .setLngLat(coords)
+                            .addTo(map);
+                    } else {
+                        console.warn("No geocoding results found for:", "<%= listing.location %>");
+                    }
                 });
             </script>
+
+
         </div>
 
     </div>
