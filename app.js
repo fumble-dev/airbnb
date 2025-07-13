@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express')
 const mongoose = require('mongoose')
 const app = express()
@@ -5,6 +7,7 @@ const path = require("path")
 const methodOverride = require('method-override')
 const ejsMate = require('ejs-mate')
 const session = require('express-session')
+const MongoStore = require('connect-mongo')
 const flash = require('connect-flash')
 const passport = require('passport')
 const localStrategy = require('passport-local')
@@ -14,7 +17,7 @@ const listingRouter = require('./routes/listing.js')
 const reviewRouter= require('./routes/review.js')
 const userRouter = require('./routes/user.js');
 
-const MONGO_URL = ""
+const MONGO_URL =process.env.MONGO_URI
 
 main()
     .then(() => {
@@ -35,8 +38,21 @@ app.use(methodOverride("_method"))
 app.engine('ejs', ejsMate)
 app.use(express.static(path.join(__dirname, "/public")))
 
+const store = MongoStore.create({
+    mongoUrl :process.env.MONGO_URI,
+    crypto :{
+        secret:process.env.SECRET
+    },
+    touchAfter : 24*60*60
+})
+
+store.on("error",(err)=>{
+    console.log("Error in Mongo Session Store",err)
+})
+
 const sessionOptions = {
-    secret: "secretcode",
+    store:store,
+    secret:process.env.SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -45,6 +61,7 @@ const sessionOptions = {
         httpOnly: true
     },
 }
+
 
 app.use(session(sessionOptions))
 app.use(flash())

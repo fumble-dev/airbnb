@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const initData = require('./data.js')
 const Listing = require('../models/listing.js')
 
-const MONGO_URL = ""
+const MONGO_URL =process.env.MONGO_URI
 
 main()
     .then(()=>{
